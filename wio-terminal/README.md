@@ -1,6 +1,6 @@
 # モニター遅延計測用ソフトの補助ツール
 
-Wio terminalにUSBシリアル通信して、GPIUを制御する。
+Wio terminalにUSBシリアル通信して、GPIOを制御する。
 
 受け付けるコマンドは1バイトのコマンドで、0x00がlow, 0x01がhighのみ。
 
