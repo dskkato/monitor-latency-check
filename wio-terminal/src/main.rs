@@ -30,6 +30,7 @@ fn main() -> ! {
 
     let pins = wio::Pins::new(peripherals.PORT);
 
+    // USB接続の場合にRPI_5V, RPI_3_3Vから給電出来るようにする
     let mut output_ctr_3v3 = pins.output_ctr_3v3.into_push_pull_output();
     output_ctr_3v3.set_low().unwrap();
     let mut output_ctr_5v = pins.output_ctr_5v.into_push_pull_output();
@@ -46,7 +47,7 @@ fn main() -> ! {
         NVIC::unmask(interrupt::USB_TRCPT1);
     }
 
-    // 光センサ読み取り用のADCとピンを初期化
+    // Digital 0 output
     let d0 = pins.a0_d0.into_push_pull_output();
     unsafe { D0 = Some(d0) };
 
