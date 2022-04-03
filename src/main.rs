@@ -24,7 +24,7 @@ struct State {
     surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
-    _config: wgpu::SurfaceConfiguration,
+    config: wgpu::SurfaceConfiguration,
 }
 
 impl State {
@@ -69,7 +69,15 @@ impl State {
             surface,
             device,
             queue,
-            _config: config,
+            config,
+        }
+    }
+
+    fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        if new_size.width > 0 && new_size.height > 0 {
+            self.config.width = new_size.width;
+            self.config.height = new_size.height;
+            self.surface.configure(&self.device, &self.config);
         }
     }
 
@@ -120,9 +128,22 @@ fn prompt_for_monitor(event_loop: &EventLoop<()>, idx: usize) -> MonitorHandle {
 }
 
 // 実験用のシリアルコマンドを送るためのラッパー
+#[cfg(unix)]
+struct Gpio(serialport::TTYPort);
+
+#[cfg(windows)]
 struct Gpio(serialport::COMPort);
 
 impl Gpio {
+    pub fn new(port_name: String, baud_rate: u32) -> Result<Self> {
+        let port_builder =
+            serialport::new(port_name, baud_rate).timeout(Duration::from_millis(100));
+        #[cfg(unix)]
+        let port = serialport::TTYPort::open(&port_builder)?;
+        #[cfg(windows)]
+        let mut port = serialport::COMPort::open(&port_builder)?;
+        Ok(Self(port))
+    }
     pub fn set_high(&mut self) -> Result<()> {
         match self.0.write(b"1") {
             Ok(n) if n == 1 => {
@@ -153,9 +174,7 @@ fn main() {
     let port_name = args.serial_port;
     let baud_rate = args.baud;
 
-    let port_builder = serialport::new(port_name, baud_rate).timeout(Duration::from_millis(100));
-    let port = serialport::COMPort::open(&port_builder).expect("Failed to open serial port");
-    let mut gpio = Gpio(port);
+    let mut gpio = Gpio::new(port_name, baud_rate).expect("Failed to open serial port");
     gpio.set_low().expect("Failed to set gpio low"); // 初期化
 
     // 描画ウィンドウの準備
@@ -214,6 +233,9 @@ fn main() {
                         },
                     ..
                 } => *control_flow = ControlFlow::Exit,
+                WindowEvent::Resized(physical_size) => {
+                    state.resize(*physical_size);
+                }
                 _ => {}
             },
             Event::RedrawRequested(window_id) if window_id == window.id() => {
