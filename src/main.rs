@@ -25,6 +25,7 @@ struct State {
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
+    output: Option<wgpu::SurfaceTexture>,
 }
 
 impl State {
@@ -70,10 +71,13 @@ impl State {
             device,
             queue,
             config,
+            output: None,
         }
     }
 
     fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        log::debug!("resize");
+        self.output = None;
         if new_size.width > 0 && new_size.height > 0 {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
@@ -82,11 +86,23 @@ impl State {
     }
 
     fn render(&mut self, color: wgpu::Color) -> Result<(), wgpu::SurfaceError> {
-        let output = self.surface.get_current_texture()?;
+        let output = match self.output.take() {
+            Some(output) => {
+                log::debug!("take current_texture");
+                output
+            }
+            None => {
+                log::debug!("get_current_texture");
+                self.output = Some(self.surface.get_current_texture()?);
+                return Ok(());
+            }
+        };
+        log::debug!("create_view");
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
+        log::debug!("create_command_encoder");
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -108,8 +124,12 @@ impl State {
             });
         }
 
+        log::debug!("submit");
         self.queue.submit(std::iter::once(encoder.finish()));
+        log::debug!("present");
         output.present();
+
+        self.output = Some(self.surface.get_current_texture()?);
 
         Ok(())
     }
