@@ -145,7 +145,7 @@ impl Gpio {
         Ok(Self(port))
     }
     pub fn set_high(&mut self) -> Result<()> {
-        match self.0.write(b"1") {
+        match self.0.write(&[0x01]) {
             Ok(n) if n == 1 => {
                 self.0.flush()?;
             }
@@ -154,7 +154,7 @@ impl Gpio {
         Ok(())
     }
     pub fn set_low(&mut self) -> Result<(), serialport::Error> {
-        match self.0.write(b"0") {
+        match self.0.write(&[0x00]) {
             Ok(n) if n == 1 => {
                 self.0.flush()?;
             }

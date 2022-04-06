@@ -95,16 +95,17 @@ fn poll_usb() {
 
                 match serial.read(&mut buf) {
                     Ok(count) if count == 1 => {
-                        // if let Some(led) = LED.as_mut() {
-                        //     led.set_high().unwrap();
-                        // }
-                        if buf[0] == b'0' {
-                            D0.as_mut().unwrap().set_low().unwrap();
-                            LED.as_mut().unwrap().set_low().unwrap();
-                        } else if buf[0] == b'1' {
-                            D0.as_mut().unwrap().set_high().unwrap();
-                            LED.as_mut().unwrap().set_high().unwrap();
-                        }
+                        match buf[0] {
+                            0x00 => {
+                                D0.as_mut().unwrap().set_low().unwrap();
+                                LED.as_mut().unwrap().set_low().unwrap();
+                            }
+                            0x01 => {
+                                D0.as_mut().unwrap().set_high().unwrap();
+                                LED.as_mut().unwrap().set_high().unwrap();
+                            }
+                            _ => {}
+                        };
                     }
                     _ => {}
                 };
