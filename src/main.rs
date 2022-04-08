@@ -141,7 +141,7 @@ impl Gpio {
         #[cfg(unix)]
         let port = serialport::TTYPort::open(&port_builder)?;
         #[cfg(windows)]
-        let mut port = serialport::COMPort::open(&port_builder)?;
+        let port = serialport::COMPort::open(&port_builder)?;
         Ok(Self(port))
     }
     pub fn set_high(&mut self) -> Result<()> {
